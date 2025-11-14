@@ -17,7 +17,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::prefix('accounts')->group(function () {
 
     // 🔹 Guest routes (only for users who are NOT logged in)
-    Route::middleware('guest')->group(function () {
+    Route::middleware('guest')->group(function () { 
         Route::get('registration', [AccountController::class, 'registration'])->name('accounts.registration');
         Route::post('process-register', [AccountController::class, 'processRegistration'])->name('accounts.processRegistration');
 
@@ -29,6 +29,7 @@ Route::prefix('accounts')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('profile', [AccountController::class, 'profile'])->name('accounts.profile');
         Route::put('update-profile', [AccountController::class, 'updateProfile'])->name('accounts.updateProfile');
+        Route::post('/accounts/update-profile-picture', [AccountController::class, 'updateProfilePicture'])->name('accounts.updateProfilePicture');
         Route::get('logout', [AccountController::class, 'logout'])->name('accounts.logout');
     });
 });

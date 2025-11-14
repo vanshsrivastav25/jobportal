@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class AccountController extends Controller
 {
@@ -106,7 +109,50 @@ class AccountController extends Controller
             $user->designation = $request->designation;
             $user->save();
 
-            session()->flash('success','Profile Update Successfully.');
+            session()->flash('success', 'Profile Update Successfully.');
+
+            return response()->json([
+                'status' => true,
+                'errors' => []
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'errors' => $validator->errors()
+            ]);
+        }
+    }
+
+    public function updateProfilePicture(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image'
+        ]);
+
+        $id = Auth::user()->id;
+
+        if ($validator->passes()) {
+            $image = $request->image;
+            $ext = $image->getClientOriginalExtension();
+            $imageName = $id . '-' . time() . '-' . $ext;
+            $image->move(public_path('/profile_picture/'), $imageName);
+
+            // create new image instance (800 x 600)
+            $sourcePath = public_path('/profile_picture/'.$imageName);
+            $manager = new ImageManager(Driver::class);
+            $image = $manager->read($sourcePath);
+
+            // crop the best fitting 5:3 (600x360) ratio and resize to 600x360 pixel
+            $image->cover(150, 150);
+            $image->toPng()->save(public_path('/profile_picture/thumb/'.$imageName));
+
+            // Delete Old Profile Picture
+            File::delete(public_path('/profile_picture/thumb/'.Auth::user()->image));
+            File::delete(public_path('/profile_picture/'.Auth::user()->image));
+
+            User::where('id', $id)->update(['image' => $imageName]);
+
+            session()->flash('success', 'Profile Picuter Update Successfully.');
 
             return response()->json([
                 'status' => true,
